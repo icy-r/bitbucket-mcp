@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createAuthProvider } from '../../../src/auth/index.js';
-import { ApiTokenAuthProvider } from '../../../src/auth/api-token.js';
+import { ApiTokenAuthProvider, AccessTokenAuthProvider } from '../../../src/auth/api-token.js';
 import { BasicAuthProvider } from '../../../src/auth/basic-auth.js';
 import { OAuth2AuthProvider } from '../../../src/auth/oauth2.js';
 import type { Config } from '../../../src/config/settings.js';
@@ -20,29 +20,30 @@ describe('createAuthProvider', () => {
       ...baseConfig,
       authMethod: 'api_token',
       apiToken: 'test-token',
+      userEmail: 'test@example.com',
     };
     const provider = createAuthProvider(config);
     expect(provider).toBeInstanceOf(ApiTokenAuthProvider);
   });
 
-  it('should create ApiTokenAuthProvider for repository_token method', () => {
+  it('should create AccessTokenAuthProvider for repository_token method', () => {
     const config: Config = {
       ...baseConfig,
       authMethod: 'repository_token',
       apiToken: 'repo-token',
     };
     const provider = createAuthProvider(config);
-    expect(provider).toBeInstanceOf(ApiTokenAuthProvider);
+    expect(provider).toBeInstanceOf(AccessTokenAuthProvider);
   });
 
-  it('should create ApiTokenAuthProvider for workspace_token method', () => {
+  it('should create AccessTokenAuthProvider for workspace_token method', () => {
     const config: Config = {
       ...baseConfig,
       authMethod: 'workspace_token',
       apiToken: 'workspace-token',
     };
     const provider = createAuthProvider(config);
-    expect(provider).toBeInstanceOf(ApiTokenAuthProvider);
+    expect(provider).toBeInstanceOf(AccessTokenAuthProvider);
   });
 
   it('should create BasicAuthProvider for basic method', () => {
@@ -72,7 +73,7 @@ describe('createAuthProvider', () => {
       ...baseConfig,
       authMethod: 'api_token',
     };
-    expect(() => createAuthProvider(config)).toThrow('BITBUCKET_API_TOKEN is required');
+    expect(() => createAuthProvider(config)).toThrow('BITBUCKET_API_TOKEN (or ATLASSIAN_API_TOKEN) is required');
   });
 
   it('should throw error for basic auth without credentials', () => {
@@ -85,4 +86,3 @@ describe('createAuthProvider', () => {
     );
   });
 });
-

@@ -63,13 +63,13 @@ describe('validateAuthConfig', () => {
   };
 
   it('should not throw for valid api_token config', () => {
-    const config: Config = { ...baseConfig, apiToken: 'test-token' };
+    const config: Config = { ...baseConfig, apiToken: 'test-token', userEmail: 'test@example.com' };
     expect(() => validateAuthConfig(config)).not.toThrow();
   });
 
   it('should throw for api_token without token', () => {
     expect(() => validateAuthConfig(baseConfig)).toThrow(
-      'BITBUCKET_API_TOKEN is required'
+      'BITBUCKET_API_TOKEN (or ATLASSIAN_API_TOKEN) is required'
     );
   });
 
