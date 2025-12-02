@@ -1,5 +1,9 @@
 # Bitbucket MCP Server
 
+[![CI](https://github.com/icy-r/bitbucket-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/icy-r/bitbucket-mcp/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@icy-r/bitbucket-mcp.svg)](https://www.npmjs.com/package/@icy-r/bitbucket-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A production-ready [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for Bitbucket Cloud and Server integration. This server enables AI agents to interact with Bitbucket repositories, pull requests, pipelines, and more through a standardized MCP interface.
 
 ## Features
@@ -36,13 +40,13 @@ A production-ready [Model Context Protocol (MCP)](https://modelcontextprotocol.i
 ## Installation
 
 ```bash
-npm install @anthropic/bitbucket-mcp
+npm install @icy-r/bitbucket-mcp
 ```
 
 Or run directly with npx:
 
 ```bash
-npx @anthropic/bitbucket-mcp
+npx @icy-r/bitbucket-mcp
 ```
 
 ## Configuration
@@ -213,7 +217,7 @@ Add the following to your MCP configuration file:
   "mcpServers": {
     "bitbucket": {
       "command": "npx",
-      "args": ["@anthropic/bitbucket-mcp"],
+      "args": ["@icy-r/bitbucket-mcp"],
       "env": {
         "BITBUCKET_AUTH_METHOD": "api_token",
         "BITBUCKET_USER_EMAIL": "your.email@example.com",
@@ -469,7 +473,7 @@ Manage Bitbucket webhooks.
 ### Setup
 
 ```bash
-git clone https://github.com/anthropic/bitbucket-mcp.git
+git clone https://github.com/icy-r/bitbucket-mcp.git
 cd bitbucket-mcp
 pnpm install
 ```
