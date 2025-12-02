@@ -1,6 +1,6 @@
 {
   "name": "@icy-r/bitbucket-mcp",
-  "version": "0.0.0-development",
+  "version": "1.0.0",
   "description": "A Model Context Protocol (MCP) server for Bitbucket Cloud and Server integration",
   "type": "module",
   "main": "dist/index.js",
