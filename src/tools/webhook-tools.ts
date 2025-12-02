@@ -6,11 +6,16 @@ import { paginateResult } from '../utils/pagination.js';
 import { formatOutput, type OutputFormat } from '../utils/output-formatter.js';
 import { WEBHOOK_COMPACT_FIELDS } from '../utils/compact-fields.js';
 import { type Config } from '../config/settings.js';
+import type { CreateWebhookRequest } from '../api/types/webhook.js';
 
 /**
  * Register consolidated webhook tool
  */
-export function registerWebhookTools(server: McpServer, client: BitbucketClient, config: Config): void {
+export function registerWebhookTools(
+  server: McpServer,
+  client: BitbucketClient,
+  config: Config
+): void {
   const webhooksApi = new WebhooksAPI(client);
 
   server.tool(
@@ -42,7 +47,10 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
         ])
         .describe('Action to perform'),
       workspace: z.string().describe('Workspace slug'),
-      repo_slug: z.string().optional().describe('Repository slug (required for repo-level webhooks)'),
+      repo_slug: z
+        .string()
+        .optional()
+        .describe('Repository slug (required for repo-level webhooks)'),
       webhook_uuid: z.string().optional().describe('Webhook UUID (required for get/update/delete)'),
       // For create/update actions
       url: z.string().optional().describe('Webhook URL'),
@@ -57,8 +65,12 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
       page: z.number().optional().describe('Page number for pagination'),
       pagelen: z.number().optional().describe('Results per page (max 100)'),
       // Output format
-      format: z.enum(['json', 'toon', 'compact']).optional()
-        .describe('Output format: json (full), toon (compact tokens), compact (essential fields only)'),
+      format: z
+        .enum(['json', 'toon', 'compact'])
+        .optional()
+        .describe(
+          'Output format: json (full), toon (compact tokens), compact (essential fields only)'
+        ),
     },
     async (params) => {
       const { action, workspace, repo_slug, webhook_uuid } = params;
@@ -69,7 +81,9 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
           case 'list': {
             if (!repo_slug) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: repo_slug is required for list action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: repo_slug is required for list action' },
+                ],
                 isError: true,
               };
             }
@@ -78,7 +92,12 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
               pagelen: params.pagelen,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(paginateResult(result), format, WEBHOOK_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(paginateResult(result), format, WEBHOOK_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -86,14 +105,22 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
             if (!repo_slug || !webhook_uuid) {
               return {
                 content: [
-                  { type: 'text' as const, text: 'Error: repo_slug and webhook_uuid are required for get action' },
+                  {
+                    type: 'text' as const,
+                    text: 'Error: repo_slug and webhook_uuid are required for get action',
+                  },
                 ],
                 isError: true,
               };
             }
             const result = await webhooksApi.get(workspace, repo_slug, webhook_uuid);
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, WEBHOOK_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, WEBHOOK_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -113,11 +140,15 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
               url: params.url,
               description: params.description,
               active: params.active ?? true,
-              events: params.events,
-              secret: params.secret,
+              events: params.events as CreateWebhookRequest['events'],
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, WEBHOOK_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, WEBHOOK_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -125,7 +156,10 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
             if (!repo_slug || !webhook_uuid) {
               return {
                 content: [
-                  { type: 'text' as const, text: 'Error: repo_slug and webhook_uuid are required for update action' },
+                  {
+                    type: 'text' as const,
+                    text: 'Error: repo_slug and webhook_uuid are required for update action',
+                  },
                 ],
                 isError: true,
               };
@@ -139,7 +173,12 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
 
             const result = await webhooksApi.update(workspace, repo_slug, webhook_uuid, updateData);
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, WEBHOOK_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, WEBHOOK_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -147,7 +186,10 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
             if (!repo_slug || !webhook_uuid) {
               return {
                 content: [
-                  { type: 'text' as const, text: 'Error: repo_slug and webhook_uuid are required for delete action' },
+                  {
+                    type: 'text' as const,
+                    text: 'Error: repo_slug and webhook_uuid are required for delete action',
+                  },
                 ],
                 isError: true,
               };
@@ -164,7 +206,12 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
               pagelen: params.pagelen,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(paginateResult(result), format, WEBHOOK_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(paginateResult(result), format, WEBHOOK_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -172,14 +219,22 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
             if (!webhook_uuid) {
               return {
                 content: [
-                  { type: 'text' as const, text: 'Error: webhook_uuid is required for get_workspace action' },
+                  {
+                    type: 'text' as const,
+                    text: 'Error: webhook_uuid is required for get_workspace action',
+                  },
                 ],
                 isError: true,
               };
             }
             const result = await webhooksApi.getWorkspaceWebhook(workspace, webhook_uuid);
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, WEBHOOK_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, WEBHOOK_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -187,7 +242,10 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
             if (!params.url || !params.events) {
               return {
                 content: [
-                  { type: 'text' as const, text: 'Error: url and events are required for create_workspace action' },
+                  {
+                    type: 'text' as const,
+                    text: 'Error: url and events are required for create_workspace action',
+                  },
                 ],
                 isError: true,
               };
@@ -196,11 +254,15 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
               url: params.url,
               description: params.description,
               active: params.active ?? true,
-              events: params.events,
-              secret: params.secret,
+              events: params.events as CreateWebhookRequest['events'],
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, WEBHOOK_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, WEBHOOK_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -208,7 +270,10 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
             if (!webhook_uuid) {
               return {
                 content: [
-                  { type: 'text' as const, text: 'Error: webhook_uuid is required for update_workspace action' },
+                  {
+                    type: 'text' as const,
+                    text: 'Error: webhook_uuid is required for update_workspace action',
+                  },
                 ],
                 isError: true,
               };
@@ -220,9 +285,18 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
             if (params.events) updateData.events = params.events;
             if (params.secret) updateData.secret = params.secret;
 
-            const result = await webhooksApi.updateWorkspaceWebhook(workspace, webhook_uuid, updateData);
+            const result = await webhooksApi.updateWorkspaceWebhook(
+              workspace,
+              webhook_uuid,
+              updateData
+            );
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, WEBHOOK_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, WEBHOOK_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -230,7 +304,10 @@ export function registerWebhookTools(server: McpServer, client: BitbucketClient,
             if (!webhook_uuid) {
               return {
                 content: [
-                  { type: 'text' as const, text: 'Error: webhook_uuid is required for delete_workspace action' },
+                  {
+                    type: 'text' as const,
+                    text: 'Error: webhook_uuid is required for delete_workspace action',
+                  },
                 ],
                 isError: true,
               };

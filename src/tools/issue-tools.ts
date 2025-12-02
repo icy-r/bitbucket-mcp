@@ -10,7 +10,11 @@ import { type Config } from '../config/settings.js';
 /**
  * Register consolidated issue tool
  */
-export function registerIssueTools(server: McpServer, client: BitbucketClient, config: Config): void {
+export function registerIssueTools(
+  server: McpServer,
+  client: BitbucketClient,
+  config: Config
+): void {
   const issuesApi = new IssuesAPI(client);
 
   server.tool(
@@ -45,12 +49,21 @@ export function registerIssueTools(server: McpServer, client: BitbucketClient, c
         .describe('Action to perform'),
       workspace: z.string().describe('Workspace slug'),
       repo_slug: z.string().describe('Repository slug'),
-      issue_id: z.number().optional().describe('Issue ID (required for most actions except list/create)'),
+      issue_id: z
+        .number()
+        .optional()
+        .describe('Issue ID (required for most actions except list/create)'),
       // For create/update actions
       title: z.string().optional().describe('Issue title'),
       content: z.string().optional().describe('Issue description or comment content'),
-      state: z.enum(['new', 'open', 'resolved', 'on hold', 'invalid', 'duplicate', 'wontfix', 'closed']).optional().describe('Issue state'),
-      priority: z.enum(['trivial', 'minor', 'major', 'critical', 'blocker']).optional().describe('Issue priority'),
+      state: z
+        .enum(['new', 'open', 'resolved', 'on hold', 'invalid', 'duplicate', 'wontfix', 'closed'])
+        .optional()
+        .describe('Issue state'),
+      priority: z
+        .enum(['trivial', 'minor', 'major', 'critical', 'blocker'])
+        .optional()
+        .describe('Issue priority'),
       kind: z.enum(['bug', 'enhancement', 'proposal', 'task']).optional().describe('Issue type'),
       assignee: z.string().optional().describe('Assignee username'),
       // For list action
@@ -61,8 +74,12 @@ export function registerIssueTools(server: McpServer, client: BitbucketClient, c
       page: z.number().optional().describe('Page number for pagination'),
       pagelen: z.number().optional().describe('Results per page (max 100)'),
       // Output format
-      format: z.enum(['json', 'toon', 'compact']).optional()
-        .describe('Output format: json (full), toon (compact tokens), compact (essential fields only)'),
+      format: z
+        .enum(['json', 'toon', 'compact'])
+        .optional()
+        .describe(
+          'Output format: json (full), toon (compact tokens), compact (essential fields only)'
+        ),
     },
     async (params) => {
       const { action, workspace, repo_slug, issue_id } = params;
@@ -83,27 +100,38 @@ export function registerIssueTools(server: McpServer, client: BitbucketClient, c
               pagelen: params.pagelen,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(paginateResult(result), format, ISSUE_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(paginateResult(result), format, ISSUE_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'get': {
             if (!issue_id) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: issue_id is required for get action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: issue_id is required for get action' },
+                ],
                 isError: true,
               };
             }
             const result = await issuesApi.get(workspace, repo_slug, issue_id);
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, ISSUE_COMPACT_FIELDS) }],
+              content: [
+                { type: 'text' as const, text: formatOutput(result, format, ISSUE_COMPACT_FIELDS) },
+              ],
             };
           }
 
           case 'create': {
             if (!params.title) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: title is required for create action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: title is required for create action' },
+                ],
                 isError: true,
               };
             }
@@ -113,17 +141,21 @@ export function registerIssueTools(server: McpServer, client: BitbucketClient, c
               state: params.state,
               priority: params.priority,
               kind: params.kind,
-              assignee: params.assignee ? { username: params.assignee } : undefined,
+              assignee: params.assignee ? { uuid: params.assignee } : undefined,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, ISSUE_COMPACT_FIELDS) }],
+              content: [
+                { type: 'text' as const, text: formatOutput(result, format, ISSUE_COMPACT_FIELDS) },
+              ],
             };
           }
 
           case 'update': {
             if (!issue_id) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: issue_id is required for update action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: issue_id is required for update action' },
+                ],
                 isError: true,
               };
             }
@@ -134,17 +166,21 @@ export function registerIssueTools(server: McpServer, client: BitbucketClient, c
             if (params.priority) updateData.priority = params.priority;
             if (params.kind) updateData.kind = params.kind;
             if (params.assignee) updateData.assignee = { username: params.assignee };
-            
+
             const result = await issuesApi.update(workspace, repo_slug, issue_id, updateData);
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, ISSUE_COMPACT_FIELDS) }],
+              content: [
+                { type: 'text' as const, text: formatOutput(result, format, ISSUE_COMPACT_FIELDS) },
+              ],
             };
           }
 
           case 'delete': {
             if (!issue_id) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: issue_id is required for delete action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: issue_id is required for delete action' },
+                ],
                 isError: true,
               };
             }
@@ -157,7 +193,12 @@ export function registerIssueTools(server: McpServer, client: BitbucketClient, c
           case 'list_comments': {
             if (!issue_id) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: issue_id is required for list_comments action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: issue_id is required for list_comments action',
+                  },
+                ],
                 isError: true,
               };
             }
@@ -166,20 +207,35 @@ export function registerIssueTools(server: McpServer, client: BitbucketClient, c
               pagelen: params.pagelen,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(paginateResult(result), format, ISSUE_COMMENT_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(paginateResult(result), format, ISSUE_COMMENT_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'add_comment': {
             if (!issue_id) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: issue_id is required for add_comment action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: issue_id is required for add_comment action',
+                  },
+                ],
                 isError: true,
               };
             }
             if (!params.content) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: content is required for add_comment action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: content is required for add_comment action',
+                  },
+                ],
                 isError: true,
               };
             }
@@ -187,14 +243,21 @@ export function registerIssueTools(server: McpServer, client: BitbucketClient, c
               content: { raw: params.content },
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, ISSUE_COMMENT_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, ISSUE_COMMENT_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'vote': {
             if (!issue_id) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: issue_id is required for vote action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: issue_id is required for vote action' },
+                ],
                 isError: true,
               };
             }
@@ -207,7 +270,9 @@ export function registerIssueTools(server: McpServer, client: BitbucketClient, c
           case 'unvote': {
             if (!issue_id) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: issue_id is required for unvote action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: issue_id is required for unvote action' },
+                ],
                 isError: true,
               };
             }
@@ -220,7 +285,9 @@ export function registerIssueTools(server: McpServer, client: BitbucketClient, c
           case 'watch': {
             if (!issue_id) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: issue_id is required for watch action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: issue_id is required for watch action' },
+                ],
                 isError: true,
               };
             }
@@ -233,7 +300,9 @@ export function registerIssueTools(server: McpServer, client: BitbucketClient, c
           case 'unwatch': {
             if (!issue_id) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: issue_id is required for unwatch action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: issue_id is required for unwatch action' },
+                ],
                 isError: true,
               };
             }

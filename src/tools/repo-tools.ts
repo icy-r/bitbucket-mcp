@@ -10,7 +10,11 @@ import { type Config } from '../config/settings.js';
 /**
  * Register consolidated repository tool
  */
-export function registerRepositoryTools(server: McpServer, client: BitbucketClient, config: Config): void {
+export function registerRepositoryTools(
+  server: McpServer,
+  client: BitbucketClient,
+  config: Config
+): void {
   const reposApi = new RepositoriesAPI(client);
 
   server.tool(
@@ -28,15 +32,25 @@ export function registerRepositoryTools(server: McpServer, client: BitbucketClie
         .enum(['list', 'get', 'create', 'delete', 'fork', 'get_file', 'list_source'])
         .describe('Action to perform'),
       workspace: z.string().describe('Workspace slug'),
-      repo_slug: z.string().optional().describe('Repository slug (required for most actions except list)'),
+      repo_slug: z
+        .string()
+        .optional()
+        .describe('Repository slug (required for most actions except list)'),
       // For list action
       q: z.string().optional().describe('Query string to filter repositories'),
       sort: z.string().optional().describe('Sort field (e.g., "-updated_on" for newest first)'),
-      role: z.enum(['owner', 'admin', 'contributor', 'member']).optional().describe('Filter by role'),
+      role: z
+        .enum(['owner', 'admin', 'contributor', 'member'])
+        .optional()
+        .describe('Filter by role'),
       // For create action
       name: z.string().optional().describe('Repository display name (for create)'),
       description: z.string().optional().describe('Repository description (for create)'),
-      is_private: z.boolean().optional().default(true).describe('Whether repository is private (for create)'),
+      is_private: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe('Whether repository is private (for create)'),
       project_key: z.string().optional().describe('Project key to associate with (for create)'),
       // For fork action
       new_name: z.string().optional().describe('Name for the forked repository'),
@@ -48,8 +62,12 @@ export function registerRepositoryTools(server: McpServer, client: BitbucketClie
       page: z.number().optional().describe('Page number for pagination'),
       pagelen: z.number().optional().describe('Results per page (max 100)'),
       // Output format
-      format: z.enum(['json', 'toon', 'compact']).optional()
-        .describe('Output format: json (full), toon (compact tokens), compact (essential fields only)'),
+      format: z
+        .enum(['json', 'toon', 'compact'])
+        .optional()
+        .describe(
+          'Output format: json (full), toon (compact tokens), compact (essential fields only)'
+        ),
     },
     async (params) => {
       const { action, workspace, repo_slug } = params;
@@ -66,27 +84,41 @@ export function registerRepositoryTools(server: McpServer, client: BitbucketClie
               pagelen: params.pagelen,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(paginateResult(result), format, REPOSITORY_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(paginateResult(result), format, REPOSITORY_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'get': {
             if (!repo_slug) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: repo_slug is required for get action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: repo_slug is required for get action' },
+                ],
                 isError: true,
               };
             }
             const result = await reposApi.get(workspace, repo_slug);
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, REPOSITORY_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, REPOSITORY_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'create': {
             if (!repo_slug) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: repo_slug is required for create action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: repo_slug is required for create action' },
+                ],
                 isError: true,
               };
             }
@@ -94,30 +126,45 @@ export function registerRepositoryTools(server: McpServer, client: BitbucketClie
               name: params.name,
               description: params.description,
               is_private: params.is_private,
+              scm: 'git',
               project: params.project_key ? { key: params.project_key } : undefined,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, REPOSITORY_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, REPOSITORY_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'delete': {
             if (!repo_slug) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: repo_slug is required for delete action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: repo_slug is required for delete action' },
+                ],
                 isError: true,
               };
             }
             await reposApi.delete(workspace, repo_slug);
             return {
-              content: [{ type: 'text' as const, text: `Repository ${workspace}/${repo_slug} deleted successfully` }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: `Repository ${workspace}/${repo_slug} deleted successfully`,
+                },
+              ],
             };
           }
 
           case 'fork': {
             if (!repo_slug) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: repo_slug is required for fork action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: repo_slug is required for fork action' },
+                ],
                 isError: true,
               };
             }
@@ -126,24 +173,41 @@ export function registerRepositoryTools(server: McpServer, client: BitbucketClie
               workspace: params.target_workspace ? { slug: params.target_workspace } : undefined,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, REPOSITORY_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, REPOSITORY_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'get_file': {
             if (!repo_slug) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: repo_slug is required for get_file action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: repo_slug is required for get_file action',
+                  },
+                ],
                 isError: true,
               };
             }
             if (!params.path) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: path is required for get_file action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: path is required for get_file action' },
+                ],
                 isError: true,
               };
             }
-            const result = await reposApi.getFileContent(workspace, repo_slug, params.ref || 'HEAD', params.path);
+            const result = await reposApi.getFileContent(
+              workspace,
+              repo_slug,
+              params.ref || 'HEAD',
+              params.path
+            );
             return {
               content: [{ type: 'text' as const, text: result }],
             };
@@ -152,16 +216,29 @@ export function registerRepositoryTools(server: McpServer, client: BitbucketClie
           case 'list_source': {
             if (!repo_slug) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: repo_slug is required for list_source action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: repo_slug is required for list_source action',
+                  },
+                ],
                 isError: true,
               };
             }
-            const result = await reposApi.listSource(workspace, repo_slug, params.ref || 'HEAD', params.path || '', {
-              page: params.page,
-              pagelen: params.pagelen,
-            });
+            const result = await reposApi.listSource(
+              workspace,
+              repo_slug,
+              params.ref || 'HEAD',
+              params.path || '',
+              {
+                page: params.page,
+                pagelen: params.pagelen,
+              }
+            );
             return {
-              content: [{ type: 'text' as const, text: formatOutput(paginateResult(result), format) }],
+              content: [
+                { type: 'text' as const, text: formatOutput(paginateResult(result), format) },
+              ],
             };
           }
 

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { AccountSchema, LinksSchema, ParticipantSchema } from './common.js';
-import { BranchSchema, CommitSchema, RepositorySchema } from './repository.js';
+import { RepositorySchema } from './repository.js';
 
 /**
  * Pull request state
@@ -197,4 +197,3 @@ export const DiffStatSchema = z.object({
 });
 
 export type DiffStat = z.infer<typeof DiffStatSchema>;
-

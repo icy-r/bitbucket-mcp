@@ -113,16 +113,17 @@ export function parseAPIError(
 
   switch (statusCode) {
     case 401:
-      return new AuthenticationError(errorMessage, responseBody);
+      return new AuthenticationError(errorMessage as string, responseBody);
     case 403:
-      return new AuthorizationError(errorMessage, responseBody);
+      return new AuthorizationError(errorMessage as string, responseBody);
     case 404:
       return new NotFoundError('Resource', endpoint);
-    case 429:
+    case 429: {
       const retryAfter = body?.retry_after as number | undefined;
       return new RateLimitError(retryAfter, responseBody);
+    }
     default:
-      return new BitbucketAPIError(errorMessage, statusCode, endpoint, responseBody);
+      return new BitbucketAPIError(errorMessage as string, statusCode, endpoint, responseBody);
   }
 }
 
@@ -149,4 +150,3 @@ export function formatErrorForMCP(error: unknown): { message: string; code: stri
     code: 'UNKNOWN_ERROR',
   };
 }
-

@@ -179,7 +179,7 @@ export class CommitsAPI {
     base: string,
     head: string
   ): Promise<{ commits: Commit[] }> {
-    const spec = `${base}..${head}`;
+    // spec would be used for direct API call: `${base}..${head}`
     const response = await this.client.getPaginated<Commit>(
       `/repositories/${workspace}/${repoSlug}/commits`,
       { include: head, exclude: base }
@@ -187,4 +187,3 @@ export class CommitsAPI {
     return { commits: response.values };
   }
 }
-

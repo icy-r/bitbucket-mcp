@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { AccountSchema, LinksSchema } from './common.js';
-import { CommitSchema, RepositorySchema } from './repository.js';
+import { RepositorySchema } from './repository.js';
 
 /**
  * Pipeline state
@@ -182,4 +182,3 @@ export const TriggerPipelineRequestSchema = z.object({
 });
 
 export type TriggerPipelineRequest = z.infer<typeof TriggerPipelineRequestSchema>;
-
