@@ -11,10 +11,10 @@ export class BasicAuthProvider implements AuthProvider {
   private readonly password: string;
 
   constructor(config: BasicAuthConfig) {
-    if (!config.username) {
+    if (!config.username?.trim()) {
       throw new AuthenticationError('Username is required for basic authentication');
     }
-    if (!config.password) {
+    if (!config.password?.trim()) {
       throw new AuthenticationError('Password is required for basic authentication');
     }
     this.username = config.username;
@@ -38,4 +38,3 @@ export class BasicAuthProvider implements AuthProvider {
     return 'basic';
   }
 }
-

@@ -3,7 +3,13 @@ import { z } from 'zod';
 /**
  * Authentication method enum
  */
-export const AuthMethod = z.enum(['api_token', 'oauth', 'basic', 'repository_token', 'workspace_token']);
+export const AuthMethod = z.enum([
+  'api_token',
+  'oauth',
+  'basic',
+  'repository_token',
+  'workspace_token',
+]);
 export type AuthMethod = z.infer<typeof AuthMethod>;
 
 /**
@@ -29,20 +35,20 @@ export const ConfigSchema = z.object({
   oauthRefreshToken: z.string().optional(),
   username: z.string().optional(),
   password: z.string().optional(),
-  
+
   // Bitbucket settings
   baseUrl: z.string().url().default('https://api.bitbucket.org/2.0'),
   serverUrl: z.string().url().optional(),
   workspace: z.string().optional(),
-  
+
   // Output format (TOON optimization for LLM token savings)
   outputFormat: OutputFormat.default('json'),
-  
+
   // HTTP settings
   timeout: z.number().positive().default(30000),
   maxRetries: z.number().nonnegative().default(3),
   retryDelay: z.number().positive().default(1000),
-  
+
   // Logging
   logLevel: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
@@ -56,8 +62,11 @@ export type Config = z.infer<typeof ConfigSchema>;
 export function loadConfig(): Config {
   // Support both BITBUCKET_* and ATLASSIAN_* environment variables
   const apiToken = process.env.BITBUCKET_API_TOKEN ?? process.env.ATLASSIAN_API_TOKEN;
-  const userEmail = process.env.BITBUCKET_USER_EMAIL ?? process.env.ATLASSIAN_USER_EMAIL ?? process.env.BITBUCKET_USERNAME;
-  
+  const userEmail =
+    process.env.BITBUCKET_USER_EMAIL ??
+    process.env.ATLASSIAN_USER_EMAIL ??
+    process.env.BITBUCKET_USERNAME;
+
   const rawConfig = {
     authMethod: process.env.BITBUCKET_AUTH_METHOD ?? 'api_token',
     apiToken,
@@ -72,9 +81,15 @@ export function loadConfig(): Config {
     serverUrl: process.env.BITBUCKET_SERVER_URL,
     workspace: process.env.BITBUCKET_WORKSPACE,
     outputFormat: process.env.BITBUCKET_OUTPUT_FORMAT ?? 'json',
-    timeout: process.env.BITBUCKET_TIMEOUT ? parseInt(process.env.BITBUCKET_TIMEOUT, 10) : 30000,
-    maxRetries: process.env.BITBUCKET_MAX_RETRIES ? parseInt(process.env.BITBUCKET_MAX_RETRIES, 10) : 3,
-    retryDelay: process.env.BITBUCKET_RETRY_DELAY ? parseInt(process.env.BITBUCKET_RETRY_DELAY, 10) : 1000,
+    timeout: process.env.BITBUCKET_TIMEOUT ? Number(process.env.BITBUCKET_TIMEOUT) || 30000 : 30000,
+    maxRetries: process.env.BITBUCKET_MAX_RETRIES
+      ? isNaN(Number(process.env.BITBUCKET_MAX_RETRIES))
+        ? 3
+        : Number(process.env.BITBUCKET_MAX_RETRIES)
+      : 3,
+    retryDelay: process.env.BITBUCKET_RETRY_DELAY
+      ? Number(process.env.BITBUCKET_RETRY_DELAY) || 1000
+      : 1000,
     logLevel: process.env.BITBUCKET_LOG_LEVEL ?? 'info',
   };
 
@@ -96,7 +111,7 @@ export function validateAuthConfig(config: Config): void {
       if (!config.userEmail) {
         throw new Error(
           'BITBUCKET_USER_EMAIL (or ATLASSIAN_USER_EMAIL) is required for api_token authentication. ' +
-          'API tokens use Basic HTTP Authentication where username is your Atlassian email.'
+            'API tokens use Basic HTTP Authentication where username is your Atlassian email.'
         );
       }
       break;

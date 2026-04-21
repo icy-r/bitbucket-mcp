@@ -63,6 +63,7 @@ export const CreateWebhookRequestSchema = z.object({
   url: z.string().url(),
   active: z.boolean().default(true),
   events: z.array(WebhookEvent),
+  secret: z.string().optional(),
 });
 
 export type CreateWebhookRequest = z.infer<typeof CreateWebhookRequestSchema>;
@@ -72,4 +73,3 @@ export type CreateWebhookRequest = z.infer<typeof CreateWebhookRequestSchema>;
  */
 export const UpdateWebhookRequestSchema = CreateWebhookRequestSchema.partial();
 export type UpdateWebhookRequest = z.infer<typeof UpdateWebhookRequestSchema>;
-

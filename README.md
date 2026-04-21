@@ -120,15 +120,15 @@ BITBUCKET_API_TOKEN=your_api_token
 
 ## Environment Variables
 
-| Variable                  | Description                   | Required       |
-| ------------------------- | ----------------------------- | -------------- |
-| `BITBUCKET_AUTH_METHOD`   | `api_token`, `oauth`, `basic` | Yes            |
-| `BITBUCKET_USER_EMAIL`    | Your Atlassian email          | For api_token  |
-| `BITBUCKET_API_TOKEN`     | API token                     | For api_token  |
-| `BITBUCKET_USERNAME`      | Bitbucket username            | For basic auth |
-| `BITBUCKET_APP_PASSWORD`  | App password                  | For basic auth |
-| `BITBUCKET_WORKSPACE`     | Default workspace             | No             |
-| `BITBUCKET_OUTPUT_FORMAT` | `json`, `toon`, `compact`     | No             |
+| Variable                  | Description                                               | Required       |
+| ------------------------- | --------------------------------------------------------- | -------------- |
+| `BITBUCKET_AUTH_METHOD`   | `api_token`, `oauth`, `basic`                             | Yes            |
+| `BITBUCKET_USER_EMAIL`    | Your Atlassian email                                      | For api_token  |
+| `BITBUCKET_API_TOKEN`     | API token                                                 | For api_token  |
+| `BITBUCKET_USERNAME`      | Bitbucket username                                        | For basic auth |
+| `BITBUCKET_APP_PASSWORD`  | App password                                              | For basic auth |
+| `BITBUCKET_WORKSPACE`     | Default workspace (used when tool call omits `workspace`) | No             |
+| `BITBUCKET_OUTPUT_FORMAT` | `json`, `toon`, `compact`                                 | No             |
 
 ## Available Tools
 
@@ -190,8 +190,16 @@ Example usage:
   "action": "trigger",
   "workspace": "my-workspace",
   "repo_slug": "my-repo",
-  "branch": "main"
+  "branch_name": "main"
 }
+```
+
+### Default workspace
+
+Set `BITBUCKET_WORKSPACE` in your environment to skip the `workspace` parameter on every tool call:
+
+```json
+{ "action": "list", "repo_slug": "my-repo" }
 ```
 
 ## Development

@@ -31,7 +31,10 @@ export function registerRepositoryTools(
       action: z
         .enum(['list', 'get', 'create', 'delete', 'fork', 'get_file', 'list_source'])
         .describe('Action to perform'),
-      workspace: z.string().describe('Workspace slug'),
+      workspace: z
+        .string()
+        .optional()
+        .describe('Workspace slug (uses BITBUCKET_WORKSPACE env if omitted)'),
       repo_slug: z
         .string()
         .optional()
@@ -60,7 +63,7 @@ export function registerRepositoryTools(
       ref: z.string().optional().default('HEAD').describe('Git ref (branch, tag, or commit hash)'),
       // Pagination
       page: z.number().optional().describe('Page number for pagination'),
-      pagelen: z.number().optional().describe('Results per page (max 100)'),
+      pagelen: z.number().optional().describe('Results per page (default: 25, max 100)'),
       // Output format
       format: z
         .enum(['json', 'toon', 'compact'])
@@ -70,7 +73,19 @@ export function registerRepositoryTools(
         ),
     },
     async (params) => {
-      const { action, workspace, repo_slug } = params;
+      const workspace = params.workspace || config.workspace;
+      if (!workspace) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Error: workspace is required (provide it or set BITBUCKET_WORKSPACE env)',
+            },
+          ],
+          isError: true,
+        };
+      }
+      const { action, repo_slug } = params;
       const format = (params.format ?? config.outputFormat) as OutputFormat;
 
       try {
@@ -229,7 +244,7 @@ export function registerRepositoryTools(
               workspace,
               repo_slug,
               params.ref || 'HEAD',
-              params.path || '',
+              params.path || undefined,
               {
                 page: params.page,
                 pagelen: params.pagelen,

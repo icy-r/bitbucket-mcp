@@ -16,8 +16,11 @@ export class OAuth2AuthProvider implements AuthProvider {
   private refreshToken: string | undefined;
   private tokenExpiry: Date | undefined;
 
+  private refreshing: Promise<void> | null = null;
+
   constructor(config: OAuthConfig) {
-    if (!config.clientId || !config.clientSecret) {
+    const hasClientCreds = config.clientId?.trim() && config.clientSecret?.trim();
+    if (!hasClientCreds) {
       if (!config.accessToken) {
         throw new AuthenticationError(
           'OAuth requires either client credentials or an access token'
@@ -66,15 +69,27 @@ export class OAuth2AuthProvider implements AuthProvider {
       return;
     }
 
+    // If a refresh is already in progress, wait for it instead of starting another
+    if (this.refreshing) {
+      await this.refreshing;
+      return;
+    }
+
     // If we have a refresh token, try to refresh
     if (this.refreshToken) {
-      await this.refreshAccessToken();
+      this.refreshing = this.refreshAccessToken().finally(() => {
+        this.refreshing = null;
+      });
+      await this.refreshing;
       return;
     }
 
     // If we have client credentials, get a new token
     if (this.clientId && this.clientSecret) {
-      await this.fetchClientCredentialsToken();
+      this.refreshing = this.fetchClientCredentialsToken().finally(() => {
+        this.refreshing = null;
+      });
+      await this.refreshing;
       return;
     }
 
@@ -94,7 +109,7 @@ export class OAuth2AuthProvider implements AuthProvider {
     const response = await fetch(this.tokenUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${credentials}`,
+        Authorization: `Basic ${credentials}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: 'grant_type=client_credentials',
@@ -121,7 +136,7 @@ export class OAuth2AuthProvider implements AuthProvider {
     const response = await fetch(this.tokenUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${credentials}`,
+        Authorization: `Basic ${credentials}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(this.refreshToken)}`,
@@ -151,4 +166,3 @@ export class OAuth2AuthProvider implements AuthProvider {
     logger.debug('OAuth tokens updated successfully');
   }
 }
-

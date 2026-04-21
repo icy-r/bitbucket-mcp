@@ -10,7 +10,11 @@ import { type Config } from '../config/settings.js';
 /**
  * Register consolidated commit tool
  */
-export function registerCommitTools(server: McpServer, client: BitbucketClient, config: Config): void {
+export function registerCommitTools(
+  server: McpServer,
+  client: BitbucketClient,
+  config: Config
+): void {
   const reposApi = new RepositoriesAPI(client);
 
   server.tool(
@@ -22,7 +26,10 @@ export function registerCommitTools(server: McpServer, client: BitbucketClient, 
 - get_diffstat: Get diffstat (summary of changes) between two refs`,
     {
       action: z.enum(['list', 'get', 'get_diff', 'get_diffstat']).describe('Action to perform'),
-      workspace: z.string().describe('Workspace slug'),
+      workspace: z
+        .string()
+        .optional()
+        .describe('Workspace slug (uses BITBUCKET_WORKSPACE env if omitted)'),
       repo_slug: z.string().describe('Repository slug'),
       // For get action
       commit_hash: z.string().optional().describe('Commit hash (required for get action)'),
@@ -35,13 +42,29 @@ export function registerCommitTools(server: McpServer, client: BitbucketClient, 
       spec: z.string().optional().describe('Diff spec (e.g., "main..feature" or "abc123..def456")'),
       // Pagination
       page: z.number().optional().describe('Page number for pagination'),
-      pagelen: z.number().optional().describe('Results per page (max 100)'),
+      pagelen: z.number().optional().describe('Results per page (default: 25, max 100)'),
       // Output format
-      format: z.enum(['json', 'toon', 'compact']).optional()
-        .describe('Output format: json (full), toon (compact tokens), compact (essential fields only)'),
+      format: z
+        .enum(['json', 'toon', 'compact'])
+        .optional()
+        .describe(
+          'Output format: json (full), toon (compact tokens), compact (essential fields only)'
+        ),
     },
     async (params) => {
-      const { action, workspace, repo_slug } = params;
+      const workspace = params.workspace || config.workspace;
+      if (!workspace) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Error: workspace is required (provide it or set BITBUCKET_WORKSPACE env)',
+            },
+          ],
+          isError: true,
+        };
+      }
+      const { action, repo_slug } = params;
       const format = (params.format ?? config.outputFormat) as OutputFormat;
 
       try {
@@ -56,27 +79,44 @@ export function registerCommitTools(server: McpServer, client: BitbucketClient, 
               pagelen: params.pagelen,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(paginateResult(result), format, COMMIT_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(paginateResult(result), format, COMMIT_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'get': {
             if (!params.commit_hash) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: commit_hash is required for get action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: commit_hash is required for get action' },
+                ],
                 isError: true,
               };
             }
             const result = await reposApi.getCommit(workspace, repo_slug, params.commit_hash);
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, COMMIT_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, COMMIT_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'get_diff': {
             if (!params.spec) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: spec is required for get_diff action (e.g., "main..feature")' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: spec is required for get_diff action (e.g., "main..feature")',
+                  },
+                ],
                 isError: true,
               };
             }
@@ -89,7 +129,12 @@ export function registerCommitTools(server: McpServer, client: BitbucketClient, 
           case 'get_diffstat': {
             if (!params.spec) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: spec is required for get_diffstat action (e.g., "main..feature")' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: spec is required for get_diffstat action (e.g., "main..feature")',
+                  },
+                ],
                 isError: true,
               };
             }
@@ -98,7 +143,12 @@ export function registerCommitTools(server: McpServer, client: BitbucketClient, 
               pagelen: params.pagelen,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(paginateResult(result), format, DIFFSTAT_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(paginateResult(result), format, DIFFSTAT_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 

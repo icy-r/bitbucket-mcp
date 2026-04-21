@@ -60,10 +60,7 @@ export class PipelinesAPI {
     repoSlug: string,
     request: TriggerPipelineRequest
   ): Promise<Pipeline> {
-    return this.client.post<Pipeline>(
-      `/repositories/${workspace}/${repoSlug}/pipelines`,
-      request
-    );
+    return this.client.post<Pipeline>(`/repositories/${workspace}/${repoSlug}/pipelines`, request);
   }
 
   /**
@@ -114,7 +111,7 @@ export class PipelinesAPI {
    */
   async stop(workspace: string, repoSlug: string, pipelineUuid: string): Promise<void> {
     await this.client.post(
-      `/repositories/${workspace}/${repoSlug}/pipelines/${pipelineUuid}/stopPipeline`
+      `/repositories/${workspace}/${repoSlug}/pipelines/${pipelineUuid}/stop_pipeline`
     );
   }
 
@@ -222,11 +219,7 @@ export class PipelinesAPI {
   /**
    * Delete a pipeline variable
    */
-  async deleteVariable(
-    workspace: string,
-    repoSlug: string,
-    variableUuid: string
-  ): Promise<void> {
+  async deleteVariable(workspace: string, repoSlug: string, variableUuid: string): Promise<void> {
     await this.client.delete(
       `/repositories/${workspace}/${repoSlug}/pipelines_config/variables/${variableUuid}`
     );
@@ -250,4 +243,3 @@ export class PipelinesAPI {
     });
   }
 }
-

@@ -10,7 +10,11 @@ import { type Config } from '../config/settings.js';
 /**
  * Register consolidated branch tool
  */
-export function registerBranchTools(server: McpServer, client: BitbucketClient, config: Config): void {
+export function registerBranchTools(
+  server: McpServer,
+  client: BitbucketClient,
+  config: Config
+): void {
   const reposApi = new RepositoriesAPI(client);
 
   server.tool(
@@ -25,9 +29,20 @@ export function registerBranchTools(server: McpServer, client: BitbucketClient, 
 - create_tag: Create a new tag`,
     {
       action: z
-        .enum(['list_branches', 'get_branch', 'create_branch', 'delete_branch', 'list_tags', 'get_tag', 'create_tag'])
+        .enum([
+          'list_branches',
+          'get_branch',
+          'create_branch',
+          'delete_branch',
+          'list_tags',
+          'get_tag',
+          'create_tag',
+        ])
         .describe('Action to perform'),
-      workspace: z.string().describe('Workspace slug'),
+      workspace: z
+        .string()
+        .optional()
+        .describe('Workspace slug (uses BITBUCKET_WORKSPACE env if omitted)'),
       repo_slug: z.string().describe('Repository slug'),
       // For get/delete/create branch
       branch_name: z.string().optional().describe('Branch name'),
@@ -40,13 +55,29 @@ export function registerBranchTools(server: McpServer, client: BitbucketClient, 
       q: z.string().optional().describe('Query string to filter results'),
       sort: z.string().optional().describe('Sort field'),
       page: z.number().optional().describe('Page number for pagination'),
-      pagelen: z.number().optional().describe('Results per page (max 100)'),
+      pagelen: z.number().optional().describe('Results per page (default: 25, max 100)'),
       // Output format
-      format: z.enum(['json', 'toon', 'compact']).optional()
-        .describe('Output format: json (full), toon (compact tokens), compact (essential fields only)'),
+      format: z
+        .enum(['json', 'toon', 'compact'])
+        .optional()
+        .describe(
+          'Output format: json (full), toon (compact tokens), compact (essential fields only)'
+        ),
     },
     async (params) => {
-      const { action, workspace, repo_slug } = params;
+      const workspace = params.workspace || config.workspace;
+      if (!workspace) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Error: workspace is required (provide it or set BITBUCKET_WORKSPACE env)',
+            },
+          ],
+          isError: true,
+        };
+      }
+      const { action, repo_slug } = params;
       const format = (params.format ?? config.outputFormat) as OutputFormat;
 
       try {
@@ -59,20 +90,35 @@ export function registerBranchTools(server: McpServer, client: BitbucketClient, 
               pagelen: params.pagelen,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(paginateResult(result), format, BRANCH_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(paginateResult(result), format, BRANCH_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'get_branch': {
             if (!params.branch_name) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: branch_name is required for get_branch action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: branch_name is required for get_branch action',
+                  },
+                ],
                 isError: true,
               };
             }
             const result = await reposApi.getBranch(workspace, repo_slug, params.branch_name);
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, BRANCH_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, BRANCH_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -88,22 +134,42 @@ export function registerBranchTools(server: McpServer, client: BitbucketClient, 
                 isError: true,
               };
             }
-            const result = await reposApi.createBranch(workspace, repo_slug, params.branch_name, params.target);
+            const result = await reposApi.createBranch(
+              workspace,
+              repo_slug,
+              params.branch_name,
+              params.target
+            );
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, BRANCH_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, BRANCH_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'delete_branch': {
             if (!params.branch_name) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: branch_name is required for delete_branch action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: branch_name is required for delete_branch action',
+                  },
+                ],
                 isError: true,
               };
             }
             await reposApi.deleteBranch(workspace, repo_slug, params.branch_name);
             return {
-              content: [{ type: 'text' as const, text: `Branch ${params.branch_name} deleted successfully` }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: `Branch ${params.branch_name} deleted successfully`,
+                },
+              ],
             };
           }
 
@@ -115,20 +181,29 @@ export function registerBranchTools(server: McpServer, client: BitbucketClient, 
               pagelen: params.pagelen,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(paginateResult(result), format, TAG_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(paginateResult(result), format, TAG_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'get_tag': {
             if (!params.tag_name) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: tag_name is required for get_tag action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: tag_name is required for get_tag action' },
+                ],
                 isError: true,
               };
             }
             const result = await reposApi.getTag(workspace, repo_slug, params.tag_name);
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, TAG_COMPACT_FIELDS) }],
+              content: [
+                { type: 'text' as const, text: formatOutput(result, format, TAG_COMPACT_FIELDS) },
+              ],
             };
           }
 
@@ -136,7 +211,10 @@ export function registerBranchTools(server: McpServer, client: BitbucketClient, 
             if (!params.tag_name || !params.target) {
               return {
                 content: [
-                  { type: 'text' as const, text: 'Error: tag_name and target are required for create_tag action' },
+                  {
+                    type: 'text' as const,
+                    text: 'Error: tag_name and target are required for create_tag action',
+                  },
                 ],
                 isError: true,
               };
@@ -149,7 +227,9 @@ export function registerBranchTools(server: McpServer, client: BitbucketClient, 
               params.message
             );
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, TAG_COMPACT_FIELDS) }],
+              content: [
+                { type: 'text' as const, text: formatOutput(result, format, TAG_COMPACT_FIELDS) },
+              ],
             };
           }
 

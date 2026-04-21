@@ -231,7 +231,8 @@ export class RepositoriesAPI {
    * Get diff between two refs
    */
   async getDiff(workspace: string, repoSlug: string, spec: string): Promise<string> {
-    return this.client.getRaw(`/repositories/${workspace}/${repoSlug}/diff/${spec}`);
+    const encodedSpec = spec.split('..').map(encodeURIComponent).join('..');
+    return this.client.getRaw(`/repositories/${workspace}/${repoSlug}/diff/${encodedSpec}`);
   }
 
   /**
@@ -242,10 +243,19 @@ export class RepositoriesAPI {
     repoSlug: string,
     spec: string,
     options?: PaginationOptions
-  ): Promise<PaginatedResponse<{ status: string; lines_added: number; lines_removed: number; old?: { path: string }; new?: { path: string } }>> {
+  ): Promise<
+    PaginatedResponse<{
+      status: string;
+      lines_added: number;
+      lines_removed: number;
+      old?: { path: string };
+      new?: { path: string };
+    }>
+  > {
     const params = buildPaginationParams(options);
+    const encodedSpec = spec.split('..').map(encodeURIComponent).join('..');
     return this.client.getPaginated(
-      `/repositories/${workspace}/${repoSlug}/diffstat/${spec}`,
+      `/repositories/${workspace}/${repoSlug}/diffstat/${encodedSpec}`,
       params
     );
   }
@@ -279,4 +289,3 @@ export class RepositoriesAPI {
     return this.client.getRaw(`/repositories/${workspace}/${repoSlug}/src/${ref}/${path}`);
   }
 }
-

@@ -33,17 +33,20 @@ async function main(): Promise<void> {
     logger.info('Bitbucket MCP server started successfully');
 
     // Handle graceful shutdown
-    process.on('SIGINT', async () => {
+    const shutdown = async () => {
       logger.info('Shutting down Bitbucket MCP server...');
-      await mcpServer.close();
-      process.exit(0);
-    });
-
-    process.on('SIGTERM', async () => {
-      logger.info('Shutting down Bitbucket MCP server...');
-      await mcpServer.close();
-      process.exit(0);
-    });
+      const forceExit = setTimeout(() => process.exit(1), 10000);
+      try {
+        await mcpServer.close();
+      } catch (error) {
+        logger.error('Error during shutdown', error);
+      } finally {
+        clearTimeout(forceExit);
+        process.exit(0);
+      }
+    };
+    process.once('SIGINT', shutdown);
+    process.once('SIGTERM', shutdown);
   } catch (error) {
     logger.error('Failed to start Bitbucket MCP server', error);
     process.exit(1);
@@ -55,4 +58,3 @@ main().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });
-

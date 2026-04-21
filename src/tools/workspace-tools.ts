@@ -4,13 +4,21 @@ import { WorkspacesAPI } from '../api/endpoints/workspaces.js';
 import { BitbucketClient } from '../api/client.js';
 import { paginateResult } from '../utils/pagination.js';
 import { formatOutput, type OutputFormat } from '../utils/output-formatter.js';
-import { WORKSPACE_COMPACT_FIELDS, PROJECT_COMPACT_FIELDS, WORKSPACE_MEMBER_COMPACT_FIELDS } from '../utils/compact-fields.js';
+import {
+  WORKSPACE_COMPACT_FIELDS,
+  PROJECT_COMPACT_FIELDS,
+  WORKSPACE_MEMBER_COMPACT_FIELDS,
+} from '../utils/compact-fields.js';
 import { type Config } from '../config/settings.js';
 
 /**
  * Register consolidated workspace tool
  */
-export function registerWorkspaceTools(server: McpServer, client: BitbucketClient, config: Config): void {
+export function registerWorkspaceTools(
+  server: McpServer,
+  client: BitbucketClient,
+  config: Config
+): void {
   const workspacesApi = new WorkspacesAPI(client);
 
   server.tool(
@@ -21,16 +29,28 @@ export function registerWorkspaceTools(server: McpServer, client: BitbucketClien
 - list_projects: List projects in a workspace
 - list_members: List members of a workspace`,
     {
-      action: z.enum(['list', 'get', 'list_projects', 'list_members']).describe('Action to perform'),
-      workspace: z.string().optional().describe('Workspace slug (required for get, list_projects, list_members)'),
+      action: z
+        .enum(['list', 'get', 'list_projects', 'list_members'])
+        .describe('Action to perform'),
+      workspace: z
+        .string()
+        .optional()
+        .describe(
+          'Workspace slug (uses BITBUCKET_WORKSPACE env if omitted; required for get, list_projects, list_members)'
+        ),
       page: z.number().optional().describe('Page number for pagination'),
-      pagelen: z.number().optional().describe('Results per page (max 100)'),
+      pagelen: z.number().optional().describe('Results per page (default: 25, max 100)'),
       // Output format
-      format: z.enum(['json', 'toon', 'compact']).optional()
-        .describe('Output format: json (full), toon (compact tokens), compact (essential fields only)'),
+      format: z
+        .enum(['json', 'toon', 'compact'])
+        .optional()
+        .describe(
+          'Output format: json (full), toon (compact tokens), compact (essential fields only)'
+        ),
     },
     async (params) => {
-      const { action, workspace, page, pagelen } = params;
+      const workspace = params.workspace || config.workspace;
+      const { action, page, pagelen } = params;
       const format = (params.format ?? config.outputFormat) as OutputFormat;
 
       try {
@@ -50,20 +70,32 @@ export function registerWorkspaceTools(server: McpServer, client: BitbucketClien
           case 'get': {
             if (!workspace) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: workspace is required for get action' }],
+                content: [
+                  { type: 'text' as const, text: 'Error: workspace is required for get action' },
+                ],
                 isError: true,
               };
             }
             const result = await workspacesApi.get(workspace);
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, WORKSPACE_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, WORKSPACE_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'list_projects': {
             if (!workspace) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: workspace is required for list_projects action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: workspace is required for list_projects action',
+                  },
+                ],
                 isError: true,
               };
             }
@@ -81,7 +113,12 @@ export function registerWorkspaceTools(server: McpServer, client: BitbucketClien
           case 'list_members': {
             if (!workspace) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: workspace is required for list_members action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: workspace is required for list_members action',
+                  },
+                ],
                 isError: true,
               };
             }
@@ -90,7 +127,11 @@ export function registerWorkspaceTools(server: McpServer, client: BitbucketClien
               content: [
                 {
                   type: 'text' as const,
-                  text: formatOutput(paginateResult(result), format, WORKSPACE_MEMBER_COMPACT_FIELDS),
+                  text: formatOutput(
+                    paginateResult(result),
+                    format,
+                    WORKSPACE_MEMBER_COMPACT_FIELDS
+                  ),
                 },
               ],
             };

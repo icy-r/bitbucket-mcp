@@ -47,7 +47,10 @@ export function registerIssueTools(
           'unwatch',
         ])
         .describe('Action to perform'),
-      workspace: z.string().describe('Workspace slug'),
+      workspace: z
+        .string()
+        .optional()
+        .describe('Workspace slug (uses BITBUCKET_WORKSPACE env if omitted)'),
       repo_slug: z.string().describe('Repository slug'),
       issue_id: z
         .number()
@@ -65,14 +68,17 @@ export function registerIssueTools(
         .optional()
         .describe('Issue priority'),
       kind: z.enum(['bug', 'enhancement', 'proposal', 'task']).optional().describe('Issue type'),
-      assignee: z.string().optional().describe('Assignee username'),
+      assignee: z
+        .string()
+        .optional()
+        .describe('Assignee account UUID (e.g., "{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}")'),
       // For list action
       q: z.string().optional().describe('Query string to filter issues'),
       sort: z.string().optional().describe('Sort field'),
       reporter: z.string().optional().describe('Filter by reporter'),
       // Pagination
       page: z.number().optional().describe('Page number for pagination'),
-      pagelen: z.number().optional().describe('Results per page (max 100)'),
+      pagelen: z.number().optional().describe('Results per page (default: 25, max 100)'),
       // Output format
       format: z
         .enum(['json', 'toon', 'compact'])
@@ -82,7 +88,19 @@ export function registerIssueTools(
         ),
     },
     async (params) => {
-      const { action, workspace, repo_slug, issue_id } = params;
+      const workspace = params.workspace || config.workspace;
+      if (!workspace) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Error: workspace is required (provide it or set BITBUCKET_WORKSPACE env)',
+            },
+          ],
+          isError: true,
+        };
+      }
+      const { action, repo_slug, issue_id } = params;
       const format = (params.format ?? config.outputFormat) as OutputFormat;
 
       try {
@@ -165,7 +183,7 @@ export function registerIssueTools(
             if (params.state) updateData.state = params.state;
             if (params.priority) updateData.priority = params.priority;
             if (params.kind) updateData.kind = params.kind;
-            if (params.assignee) updateData.assignee = { username: params.assignee };
+            if (params.assignee) updateData.assignee = { uuid: params.assignee };
 
             const result = await issuesApi.update(workspace, repo_slug, issue_id, updateData);
             return {

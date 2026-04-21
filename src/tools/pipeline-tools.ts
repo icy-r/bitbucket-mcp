@@ -4,13 +4,21 @@ import { PipelinesAPI } from '../api/endpoints/pipelines.js';
 import { BitbucketClient } from '../api/client.js';
 import { paginateResult } from '../utils/pagination.js';
 import { formatOutput, type OutputFormat } from '../utils/output-formatter.js';
-import { PIPELINE_COMPACT_FIELDS, PIPELINE_STEP_COMPACT_FIELDS, PIPELINE_VARIABLE_COMPACT_FIELDS } from '../utils/compact-fields.js';
+import {
+  PIPELINE_COMPACT_FIELDS,
+  PIPELINE_STEP_COMPACT_FIELDS,
+  PIPELINE_VARIABLE_COMPACT_FIELDS,
+} from '../utils/compact-fields.js';
 import { type Config } from '../config/settings.js';
 
 /**
  * Register consolidated pipeline tool
  */
-export function registerPipelineTools(server: McpServer, client: BitbucketClient, config: Config): void {
+export function registerPipelineTools(
+  server: McpServer,
+  client: BitbucketClient,
+  config: Config
+): void {
   const pipelinesApi = new PipelinesAPI(client);
 
   server.tool(
@@ -51,14 +59,20 @@ export function registerPipelineTools(server: McpServer, client: BitbucketClient
           'delete_variable',
         ])
         .describe('Action to perform'),
-      workspace: z.string().describe('Workspace slug'),
+      workspace: z
+        .string()
+        .optional()
+        .describe('Workspace slug (uses BITBUCKET_WORKSPACE env if omitted)'),
       repo_slug: z.string().describe('Repository slug'),
       // For get/stop/list_steps actions
       pipeline_uuid: z.string().optional().describe('Pipeline UUID'),
       // For get_step/get_logs actions
       step_uuid: z.string().optional().describe('Step UUID'),
       // For trigger actions
-      branch: z.string().optional().describe('Branch name to trigger pipeline on'),
+      branch_name: z
+        .string()
+        .optional()
+        .describe('Branch name to trigger pipeline on (required for trigger/trigger_custom)'),
       pattern: z.string().optional().describe('Custom pipeline pattern (for trigger_custom)'),
       variables: z
         .array(
@@ -82,13 +96,29 @@ export function registerPipelineTools(server: McpServer, client: BitbucketClient
       target_branch: z.string().optional().describe('Filter by target branch'),
       // Pagination
       page: z.number().optional().describe('Page number for pagination'),
-      pagelen: z.number().optional().describe('Results per page (max 100)'),
+      pagelen: z.number().optional().describe('Results per page (default: 25, max 100)'),
       // Output format
-      format: z.enum(['json', 'toon', 'compact']).optional()
-        .describe('Output format: json (full), toon (compact tokens), compact (essential fields only)'),
+      format: z
+        .enum(['json', 'toon', 'compact'])
+        .optional()
+        .describe(
+          'Output format: json (full), toon (compact tokens), compact (essential fields only)'
+        ),
     },
     async (params) => {
-      const { action, workspace, repo_slug } = params;
+      const workspace = params.workspace || config.workspace;
+      if (!workspace) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Error: workspace is required (provide it or set BITBUCKET_WORKSPACE env)',
+            },
+          ],
+          isError: true,
+        };
+      }
+      const { action, repo_slug } = params;
       const format = (params.format ?? config.outputFormat) as OutputFormat;
 
       try {
@@ -101,41 +131,74 @@ export function registerPipelineTools(server: McpServer, client: BitbucketClient
               pagelen: params.pagelen,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(paginateResult(result), format, PIPELINE_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(paginateResult(result), format, PIPELINE_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'get': {
             if (!params.pipeline_uuid) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: pipeline_uuid is required for get action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: pipeline_uuid is required for get action',
+                  },
+                ],
                 isError: true,
               };
             }
             const result = await pipelinesApi.get(workspace, repo_slug, params.pipeline_uuid);
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, PIPELINE_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, PIPELINE_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'trigger': {
-            if (!params.branch) {
+            if (!params.branch_name) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: branch is required for trigger action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: branch_name is required for trigger action',
+                  },
+                ],
                 isError: true,
               };
             }
-            const result = await pipelinesApi.triggerBranch(workspace, repo_slug, params.branch, params.variables);
+            const result = await pipelinesApi.triggerBranch(
+              workspace,
+              repo_slug,
+              params.branch_name,
+              params.variables
+            );
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, PIPELINE_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, PIPELINE_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'trigger_custom': {
-            if (!params.branch || !params.pattern) {
+            if (!params.branch_name || !params.pattern) {
               return {
                 content: [
-                  { type: 'text' as const, text: 'Error: branch and pattern are required for trigger_custom action' },
+                  {
+                    type: 'text' as const,
+                    text: 'Error: branch_name and pattern are required for trigger_custom action',
+                  },
                 ],
                 isError: true,
               };
@@ -143,19 +206,29 @@ export function registerPipelineTools(server: McpServer, client: BitbucketClient
             const result = await pipelinesApi.triggerCustom(
               workspace,
               repo_slug,
-              params.branch,
+              params.branch_name,
               params.pattern,
               params.variables
             );
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, PIPELINE_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, PIPELINE_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
           case 'stop': {
             if (!params.pipeline_uuid) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: pipeline_uuid is required for stop action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: pipeline_uuid is required for stop action',
+                  },
+                ],
                 isError: true,
               };
             }
@@ -168,16 +241,31 @@ export function registerPipelineTools(server: McpServer, client: BitbucketClient
           case 'list_steps': {
             if (!params.pipeline_uuid) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: pipeline_uuid is required for list_steps action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: pipeline_uuid is required for list_steps action',
+                  },
+                ],
                 isError: true,
               };
             }
-            const result = await pipelinesApi.listSteps(workspace, repo_slug, params.pipeline_uuid, {
-              page: params.page,
-              pagelen: params.pagelen,
-            });
+            const result = await pipelinesApi.listSteps(
+              workspace,
+              repo_slug,
+              params.pipeline_uuid,
+              {
+                page: params.page,
+                pagelen: params.pagelen,
+              }
+            );
             return {
-              content: [{ type: 'text' as const, text: formatOutput(paginateResult(result), format, PIPELINE_STEP_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(paginateResult(result), format, PIPELINE_STEP_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -193,9 +281,19 @@ export function registerPipelineTools(server: McpServer, client: BitbucketClient
                 isError: true,
               };
             }
-            const result = await pipelinesApi.getStep(workspace, repo_slug, params.pipeline_uuid, params.step_uuid);
+            const result = await pipelinesApi.getStep(
+              workspace,
+              repo_slug,
+              params.pipeline_uuid,
+              params.step_uuid
+            );
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, PIPELINE_STEP_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, PIPELINE_STEP_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -203,7 +301,10 @@ export function registerPipelineTools(server: McpServer, client: BitbucketClient
             if (!params.pipeline_uuid || !params.step_uuid) {
               return {
                 content: [
-                  { type: 'text' as const, text: 'Error: pipeline_uuid and step_uuid are required for get_logs action' },
+                  {
+                    type: 'text' as const,
+                    text: 'Error: pipeline_uuid and step_uuid are required for get_logs action',
+                  },
                 ],
                 isError: true,
               };
@@ -229,14 +330,22 @@ export function registerPipelineTools(server: McpServer, client: BitbucketClient
           case 'set_enabled': {
             if (params.enabled === undefined) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: enabled is required for set_enabled action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: enabled is required for set_enabled action',
+                  },
+                ],
                 isError: true,
               };
             }
             await pipelinesApi.setEnabled(workspace, repo_slug, params.enabled);
             return {
               content: [
-                { type: 'text' as const, text: `Pipelines ${params.enabled ? 'enabled' : 'disabled'} successfully` },
+                {
+                  type: 'text' as const,
+                  text: `Pipelines ${params.enabled ? 'enabled' : 'disabled'} successfully`,
+                },
               ],
             };
           }
@@ -247,20 +356,43 @@ export function registerPipelineTools(server: McpServer, client: BitbucketClient
               pagelen: params.pagelen,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(paginateResult(result), format, PIPELINE_VARIABLE_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(
+                    paginateResult(result),
+                    format,
+                    PIPELINE_VARIABLE_COMPACT_FIELDS
+                  ),
+                },
+              ],
             };
           }
 
           case 'get_variable': {
             if (!params.variable_uuid) {
               return {
-                content: [{ type: 'text' as const, text: 'Error: variable_uuid is required for get_variable action' }],
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: variable_uuid is required for get_variable action',
+                  },
+                ],
                 isError: true,
               };
             }
-            const result = await pipelinesApi.getVariable(workspace, repo_slug, params.variable_uuid);
+            const result = await pipelinesApi.getVariable(
+              workspace,
+              repo_slug,
+              params.variable_uuid
+            );
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, PIPELINE_VARIABLE_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, PIPELINE_VARIABLE_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -268,7 +400,10 @@ export function registerPipelineTools(server: McpServer, client: BitbucketClient
             if (!params.key || !params.value) {
               return {
                 content: [
-                  { type: 'text' as const, text: 'Error: key and value are required for create_variable action' },
+                  {
+                    type: 'text' as const,
+                    text: 'Error: key and value are required for create_variable action',
+                  },
                 ],
                 isError: true,
               };
@@ -279,7 +414,12 @@ export function registerPipelineTools(server: McpServer, client: BitbucketClient
               secured: params.secured,
             });
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, PIPELINE_VARIABLE_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, PIPELINE_VARIABLE_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -287,18 +427,31 @@ export function registerPipelineTools(server: McpServer, client: BitbucketClient
             if (!params.variable_uuid) {
               return {
                 content: [
-                  { type: 'text' as const, text: 'Error: variable_uuid is required for update_variable action' },
+                  {
+                    type: 'text' as const,
+                    text: 'Error: variable_uuid is required for update_variable action',
+                  },
                 ],
                 isError: true,
               };
             }
-            const result = await pipelinesApi.updateVariable(workspace, repo_slug, params.variable_uuid, {
-              key: params.key,
-              value: params.value,
-              secured: params.secured,
-            });
+            const result = await pipelinesApi.updateVariable(
+              workspace,
+              repo_slug,
+              params.variable_uuid,
+              {
+                key: params.key,
+                value: params.value,
+                secured: params.secured,
+              }
+            );
             return {
-              content: [{ type: 'text' as const, text: formatOutput(result, format, PIPELINE_VARIABLE_COMPACT_FIELDS) }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(result, format, PIPELINE_VARIABLE_COMPACT_FIELDS),
+                },
+              ],
             };
           }
 
@@ -306,7 +459,10 @@ export function registerPipelineTools(server: McpServer, client: BitbucketClient
             if (!params.variable_uuid) {
               return {
                 content: [
-                  { type: 'text' as const, text: 'Error: variable_uuid is required for delete_variable action' },
+                  {
+                    type: 'text' as const,
+                    text: 'Error: variable_uuid is required for delete_variable action',
+                  },
                 ],
                 isError: true,
               };

@@ -46,7 +46,10 @@ export function registerWebhookTools(
           'delete_workspace',
         ])
         .describe('Action to perform'),
-      workspace: z.string().describe('Workspace slug'),
+      workspace: z
+        .string()
+        .optional()
+        .describe('Workspace slug (uses BITBUCKET_WORKSPACE env if omitted)'),
       repo_slug: z
         .string()
         .optional()
@@ -63,7 +66,7 @@ export function registerWebhookTools(
       secret: z.string().optional().describe('Webhook secret for signature verification'),
       // Pagination
       page: z.number().optional().describe('Page number for pagination'),
-      pagelen: z.number().optional().describe('Results per page (max 100)'),
+      pagelen: z.number().optional().describe('Results per page (default: 25, max 100)'),
       // Output format
       format: z
         .enum(['json', 'toon', 'compact'])
@@ -73,7 +76,19 @@ export function registerWebhookTools(
         ),
     },
     async (params) => {
-      const { action, workspace, repo_slug, webhook_uuid } = params;
+      const workspace = params.workspace || config.workspace;
+      if (!workspace) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Error: workspace is required (provide it or set BITBUCKET_WORKSPACE env)',
+            },
+          ],
+          isError: true,
+        };
+      }
+      const { action, repo_slug, webhook_uuid } = params;
       const format = (params.format ?? config.outputFormat) as OutputFormat;
 
       try {
@@ -141,6 +156,7 @@ export function registerWebhookTools(
               description: params.description,
               active: params.active ?? true,
               events: params.events as CreateWebhookRequest['events'],
+              secret: params.secret,
             });
             return {
               content: [
@@ -255,6 +271,7 @@ export function registerWebhookTools(
               description: params.description,
               active: params.active ?? true,
               events: params.events as CreateWebhookRequest['events'],
+              secret: params.secret,
             });
             return {
               content: [
