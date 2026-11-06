@@ -138,7 +138,7 @@ BITBUCKET_API_TOKEN=your_api_token
 | `bitbucket_repositories`  | list, get, create, delete, fork, get_file, list_source                                                                                                                             |
 | `bitbucket_pull_requests` | list, get, create, update, merge, approve, unapprove, decline, list_comments, add_comment, get_diff                                                                                |
 | `bitbucket_branches`      | list_branches, get_branch, create_branch, delete_branch, list_tags, get_tag, create_tag                                                                                            |
-| `bitbucket_commits`       | list, get, get_diff, get_diffstat                                                                                                                                                  |
+| `bitbucket_commits`       | list, get, get_diff, get_diffstat, list_statuses                                                                                                                                   |
 | `bitbucket_pipelines`     | list, get, trigger, trigger_custom, stop, list_steps, get_step, get_logs, get_config, set_enabled, list_variables, get_variable, create_variable, update_variable, delete_variable |
 | `bitbucket_issues`        | list, get, create, update, delete, list_comments, add_comment, vote, unvote, watch, unwatch                                                                                        |
 | `bitbucket_webhooks`      | list, get, create, update, delete, list_workspace, get_workspace, create_workspace, update_workspace, delete_workspace                                                             |
