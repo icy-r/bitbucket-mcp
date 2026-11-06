@@ -7,6 +7,8 @@ import type { Config } from '../../../src/config/settings.js';
 const mockList = vi.fn().mockResolvedValue({ values: [], page: 1, pagelen: 25, size: 0 });
 const mockCreate = vi.fn().mockResolvedValue({ id: 2, title: 'Test PR', state: 'OPEN' });
 const mockCreateComment = vi.fn().mockResolvedValue({ id: 10, content: { raw: 'test' } });
+const mockUpdateComment = vi.fn().mockResolvedValue({ id: 10, content: { raw: 'edited' } });
+const mockDeleteComment = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../../../src/api/endpoints/pull-requests.js', () => ({
   PullRequestsAPI: vi.fn().mockImplementation(() => ({
@@ -20,6 +22,8 @@ vi.mock('../../../src/api/endpoints/pull-requests.js', () => ({
     decline: vi.fn().mockResolvedValue({ id: 1, state: 'DECLINED' }),
     listComments: vi.fn().mockResolvedValue({ values: [], page: 1, pagelen: 25, size: 0 }),
     createComment: mockCreateComment,
+    updateComment: mockUpdateComment,
+    deleteComment: mockDeleteComment,
     getDiff: vi.fn().mockResolvedValue('diff output'),
   })),
 }));
@@ -110,6 +114,60 @@ describe('Pull Request Tools', () => {
       });
 
       expect(result.isError).toBeUndefined();
+    });
+  });
+
+  describe('comment edit and delete', () => {
+    it('should update the comment content', async () => {
+      const result = await handler({
+        action: 'update_comment',
+        workspace: 'test-ws',
+        repo_slug: 'test-repo',
+        pr_id: 1,
+        comment_id: 10,
+        content: 'edited',
+      });
+
+      expect(result.isError).toBeUndefined();
+      expect(mockUpdateComment).toHaveBeenCalledWith('test-ws', 'test-repo', 1, 10, 'edited');
+    });
+
+    it('should delete the comment', async () => {
+      const result = await handler({
+        action: 'delete_comment',
+        workspace: 'test-ws',
+        repo_slug: 'test-repo',
+        pr_id: 1,
+        comment_id: 10,
+      });
+
+      expect(result.isError).toBeUndefined();
+      expect(mockDeleteComment).toHaveBeenCalledWith('test-ws', 'test-repo', 1, 10);
+    });
+
+    it('should return error when update_comment has no content', async () => {
+      const result = await handler({
+        action: 'update_comment',
+        workspace: 'test-ws',
+        repo_slug: 'test-repo',
+        pr_id: 1,
+        comment_id: 10,
+      });
+
+      expect(result.isError).toBe(true);
+      expect(mockUpdateComment).not.toHaveBeenCalled();
+    });
+
+    it('should return error when delete_comment has no comment_id', async () => {
+      const result = await handler({
+        action: 'delete_comment',
+        workspace: 'test-ws',
+        repo_slug: 'test-repo',
+        pr_id: 1,
+      });
+
+      expect(result.isError).toBe(true);
+      expect(mockDeleteComment).not.toHaveBeenCalled();
     });
   });
 
