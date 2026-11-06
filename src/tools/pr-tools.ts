@@ -27,6 +27,8 @@ export function registerPullRequestTools(
 - merge: Merge a pull request
 - approve: Approve a pull request
 - unapprove: Remove approval from a pull request
+- request_changes: Request changes on a pull request
+- remove_request_changes: Remove your change request from a pull request
 - decline: Decline a pull request
 - list_comments: List comments on a pull request
 - add_comment: Add a comment to a pull request
@@ -41,6 +43,8 @@ export function registerPullRequestTools(
           'merge',
           'approve',
           'unapprove',
+          'request_changes',
+          'remove_request_changes',
           'decline',
           'list_comments',
           'add_comment',
@@ -258,6 +262,42 @@ export function registerPullRequestTools(
             await prApi.unapprove(workspace, repo_slug, pr_id);
             return {
               content: [{ type: 'text' as const, text: 'Approval removed successfully' }],
+            };
+          }
+
+          case 'request_changes': {
+            if (!pr_id) {
+              return {
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: pr_id is required for request_changes action',
+                  },
+                ],
+                isError: true,
+              };
+            }
+            const result = await prApi.requestChanges(workspace, repo_slug, pr_id);
+            return {
+              content: [{ type: 'text' as const, text: formatOutput(result, format) }],
+            };
+          }
+
+          case 'remove_request_changes': {
+            if (!pr_id) {
+              return {
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: pr_id is required for remove_request_changes action',
+                  },
+                ],
+                isError: true,
+              };
+            }
+            await prApi.removeRequestChanges(workspace, repo_slug, pr_id);
+            return {
+              content: [{ type: 'text' as const, text: 'Change request removed successfully' }],
             };
           }
 

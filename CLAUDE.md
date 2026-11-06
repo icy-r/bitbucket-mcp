@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Bitbucket MCP is a Model Context Protocol server (`@icy-r/bitbucket-mcp`) that enables AI assistants to interact with Bitbucket Cloud and Server/Data Center. It exposes 8 consolidated MCP tools (69 total actions) covering workspaces, repositories, pull requests, branches, commits, pipelines, issues, and webhooks.
+Bitbucket MCP is a Model Context Protocol server (`@icy-r/bitbucket-mcp`) that enables AI assistants to interact with Bitbucket Cloud and Server/Data Center. It exposes 8 consolidated MCP tools (71 total actions) covering workspaces, repositories, pull requests, branches, commits, pipelines, issues, and webhooks.
 
 ## Commands
 
@@ -30,7 +30,7 @@ Run a single test file: `pnpm vitest run tests/unit/auth/api-token.test.ts`
 
 **Key layers:**
 
-- **`src/server.ts`** — `BitbucketMCPServer` orchestrates all tool registrations. Each of the 8 tools is a single MCP tool with an `action` enum parameter (e.g., `bitbucket_pull_requests` supports 11 actions like list, get, create, merge, approve).
+- **`src/server.ts`** — `BitbucketMCPServer` orchestrates all tool registrations. Each of the 8 tools is a single MCP tool with an `action` enum parameter (e.g., `bitbucket_pull_requests` supports 13 actions like list, get, create, merge, approve).
 - **`src/tools/`** — Tool registration files. Each receives `McpServer`, `BitbucketClient`, and `Config`, creates an endpoint API instance, registers the tool with a Zod schema, and dispatches on `action`.
 - **`src/api/client.ts`** — `BitbucketClient` wraps `fetch` with retry logic (exponential backoff), rate limit handling (429 + Retry-After), timeout support, and auth header injection.
 - **`src/api/endpoints/`** — Typed API classes (one per resource) that build Bitbucket REST paths and delegate HTTP calls to `BitbucketClient`.

@@ -140,6 +140,15 @@ export class PullRequestsAPI {
   }
 
   /**
+   * Remove a change request from a pull request
+   */
+  async removeRequestChanges(workspace: string, repoSlug: string, prId: number): Promise<void> {
+    await this.client.delete(
+      `/repositories/${workspace}/${repoSlug}/pullrequests/${prId}/request-changes`
+    );
+  }
+
+  /**
    * Get pull request diff
    */
   async getDiff(workspace: string, repoSlug: string, prId: number): Promise<string> {

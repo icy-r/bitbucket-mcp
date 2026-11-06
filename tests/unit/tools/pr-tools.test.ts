@@ -7,6 +7,10 @@ import type { Config } from '../../../src/config/settings.js';
 const mockList = vi.fn().mockResolvedValue({ values: [], page: 1, pagelen: 25, size: 0 });
 const mockCreate = vi.fn().mockResolvedValue({ id: 2, title: 'Test PR', state: 'OPEN' });
 const mockCreateComment = vi.fn().mockResolvedValue({ id: 10, content: { raw: 'test' } });
+const mockRequestChanges = vi
+  .fn()
+  .mockResolvedValue({ approved: false, state: 'changes_requested' });
+const mockRemoveRequestChanges = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../../../src/api/endpoints/pull-requests.js', () => ({
   PullRequestsAPI: vi.fn().mockImplementation(() => ({
@@ -17,6 +21,8 @@ vi.mock('../../../src/api/endpoints/pull-requests.js', () => ({
     merge: vi.fn().mockResolvedValue({ id: 1, state: 'MERGED' }),
     approve: vi.fn().mockResolvedValue({ approved: true }),
     unapprove: vi.fn().mockResolvedValue(undefined),
+    requestChanges: mockRequestChanges,
+    removeRequestChanges: mockRemoveRequestChanges,
     decline: vi.fn().mockResolvedValue({ id: 1, state: 'DECLINED' }),
     listComments: vi.fn().mockResolvedValue({ values: [], page: 1, pagelen: 25, size: 0 }),
     createComment: mockCreateComment,
@@ -111,6 +117,43 @@ describe('Pull Request Tools', () => {
 
       expect(result.isError).toBeUndefined();
     });
+  });
+
+  describe('request changes', () => {
+    it('should request changes on the pull request', async () => {
+      const result = await handler({
+        action: 'request_changes',
+        workspace: 'test-ws',
+        repo_slug: 'test-repo',
+        pr_id: 7,
+      });
+
+      expect(result.isError).toBeUndefined();
+      expect(mockRequestChanges).toHaveBeenCalledWith('test-ws', 'test-repo', 7);
+      expect(result.content[0].text).toContain('changes_requested');
+    });
+
+    it('should remove the change request from the pull request', async () => {
+      const result = await handler({
+        action: 'remove_request_changes',
+        workspace: 'test-ws',
+        repo_slug: 'test-repo',
+        pr_id: 7,
+      });
+
+      expect(result.isError).toBeUndefined();
+      expect(mockRemoveRequestChanges).toHaveBeenCalledWith('test-ws', 'test-repo', 7);
+    });
+
+    it.each(['request_changes', 'remove_request_changes'])(
+      'should return error when pr_id is missing for %s',
+      async (action) => {
+        const result = await handler({ action, workspace: 'test-ws', repo_slug: 'test-repo' });
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain(`pr_id is required for ${action} action`);
+      }
+    );
   });
 
   describe('workspace default from config', () => {
