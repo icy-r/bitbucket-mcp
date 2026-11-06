@@ -17,7 +17,7 @@ vi.mock('../../../src/api/endpoints/pipelines.js', () => ({
     stop: vi.fn().mockResolvedValue(undefined),
     listSteps: vi.fn().mockResolvedValue({ values: [], page: 1, pagelen: 25, size: 0 }),
     getStep: vi.fn().mockResolvedValue({ uuid: '{step-uuid}' }),
-    getStepLogs: vi.fn().mockResolvedValue('log output'),
+    getStepLogs: vi.fn().mockResolvedValue('line 1\nline 2\nline 3\nline 4\nline 5'),
     getConfig: vi.fn().mockResolvedValue({ enabled: true }),
     setEnabled: vi.fn().mockResolvedValue(undefined),
     listVariables: vi.fn().mockResolvedValue({ values: [], page: 1, pagelen: 25, size: 0 }),
@@ -110,6 +110,34 @@ describe('Pipeline Tools', () => {
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('branch_name');
+    });
+  });
+
+  describe('get_logs tail_lines', () => {
+    const logParams = {
+      action: 'get_logs',
+      workspace: 'test-ws',
+      repo_slug: 'test-repo',
+      pipeline_uuid: '{pipeline-uuid}',
+      step_uuid: '{step-uuid}',
+    };
+
+    it('should return only the last N lines with a marker', async () => {
+      const result = await handler({ ...logParams, tail_lines: 2 });
+
+      expect(result.content[0].text).toBe('[last 2 of 5 lines]\nline 4\nline 5');
+    });
+
+    it('should return the whole log without tail_lines', async () => {
+      const result = await handler(logParams);
+
+      expect(result.content[0].text).toBe('line 1\nline 2\nline 3\nline 4\nline 5');
+    });
+
+    it('should return the whole log when it is shorter than tail_lines', async () => {
+      const result = await handler({ ...logParams, tail_lines: 10 });
+
+      expect(result.content[0].text).toBe('line 1\nline 2\nline 3\nline 4\nline 5');
     });
   });
 

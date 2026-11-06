@@ -31,7 +31,7 @@ export function registerPipelineTools(
 - stop: Stop a running pipeline
 - list_steps: List steps of a pipeline
 - get_step: Get details of a specific step
-- get_logs: Get logs for a pipeline step
+- get_logs: Get logs for a pipeline step (use tail_lines to return only the end of a long log)
 - get_config: Get pipeline configuration (enabled status)
 - set_enabled: Enable or disable pipelines for a repository
 - list_variables: List pipeline variables
@@ -68,6 +68,12 @@ export function registerPipelineTools(
       pipeline_uuid: z.string().optional().describe('Pipeline UUID'),
       // For get_step/get_logs actions
       step_uuid: z.string().optional().describe('Step UUID'),
+      tail_lines: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Return only the last N lines of the log (get_logs)'),
       // For trigger actions
       branch_name: z
         .string()
@@ -315,6 +321,18 @@ export function registerPipelineTools(
               params.pipeline_uuid,
               params.step_uuid
             );
+            const lines = result.split('\n');
+            if (params.tail_lines && lines.length > params.tail_lines) {
+              const tail = lines.slice(-params.tail_lines).join('\n');
+              return {
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: `[last ${params.tail_lines} of ${lines.length} lines]\n${tail}`,
+                  },
+                ],
+              };
+            }
             return {
               content: [{ type: 'text' as const, text: result }],
             };
