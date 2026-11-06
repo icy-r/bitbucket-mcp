@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Bitbucket MCP is a Model Context Protocol server (`@icy-r/bitbucket-mcp`) that enables AI assistants to interact with Bitbucket Cloud and Server/Data Center. It exposes 8 consolidated MCP tools (69 total actions) covering workspaces, repositories, pull requests, branches, commits, pipelines, issues, and webhooks.
+Bitbucket MCP is a Model Context Protocol server (`@icy-r/bitbucket-mcp`) that enables AI assistants to interact with Bitbucket Cloud and Server/Data Center. It exposes 8 consolidated MCP tools (70 total actions) covering workspaces, repositories, pull requests, branches, commits, pipelines, issues, and webhooks.
 
 ## Commands
 

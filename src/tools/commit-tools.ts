@@ -1,10 +1,15 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import { CommitsAPI } from '../api/endpoints/commits.js';
 import { RepositoriesAPI } from '../api/endpoints/repositories.js';
 import { BitbucketClient } from '../api/client.js';
 import { paginateResult } from '../utils/pagination.js';
 import { formatOutput, type OutputFormat } from '../utils/output-formatter.js';
-import { COMMIT_COMPACT_FIELDS, DIFFSTAT_COMPACT_FIELDS } from '../utils/compact-fields.js';
+import {
+  BUILD_STATUS_COMPACT_FIELDS,
+  COMMIT_COMPACT_FIELDS,
+  DIFFSTAT_COMPACT_FIELDS,
+} from '../utils/compact-fields.js';
 import { type Config } from '../config/settings.js';
 
 /**
@@ -16,6 +21,7 @@ export function registerCommitTools(
   config: Config
 ): void {
   const reposApi = new RepositoriesAPI(client);
+  const commitsApi = new CommitsAPI(client);
 
   server.tool(
     'bitbucket_commits',
@@ -23,16 +29,22 @@ export function registerCommitTools(
 - list: List commits in a repository
 - get: Get details of a specific commit
 - get_diff: Get diff between two refs (e.g., "branch1..branch2" or "commit1..commit2")
-- get_diffstat: Get diffstat (summary of changes) between two refs`,
+- get_diffstat: Get diffstat (summary of changes) between two refs
+- list_statuses: List build statuses reported for a commit (CI results)`,
     {
-      action: z.enum(['list', 'get', 'get_diff', 'get_diffstat']).describe('Action to perform'),
+      action: z
+        .enum(['list', 'get', 'get_diff', 'get_diffstat', 'list_statuses'])
+        .describe('Action to perform'),
       workspace: z
         .string()
         .optional()
         .describe('Workspace slug (uses BITBUCKET_WORKSPACE env if omitted)'),
       repo_slug: z.string().describe('Repository slug'),
       // For get action
-      commit_hash: z.string().optional().describe('Commit hash (required for get action)'),
+      commit_hash: z
+        .string()
+        .optional()
+        .describe('Commit hash (required for get and list_statuses actions)'),
       // For list action
       revision: z.string().optional().describe('Branch name or commit hash to list commits from'),
       path: z.string().optional().describe('Filter commits by file path'),
@@ -147,6 +159,34 @@ export function registerCommitTools(
                 {
                   type: 'text' as const,
                   text: formatOutput(paginateResult(result), format, DIFFSTAT_COMPACT_FIELDS),
+                },
+              ],
+            };
+          }
+
+          case 'list_statuses': {
+            if (!params.commit_hash) {
+              return {
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: 'Error: commit_hash is required for list_statuses action',
+                  },
+                ],
+                isError: true,
+              };
+            }
+            const result = await commitsApi.listBuildStatuses(
+              workspace,
+              repo_slug,
+              params.commit_hash,
+              { page: params.page, pagelen: params.pagelen }
+            );
+            return {
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatOutput(paginateResult(result), format, BUILD_STATUS_COMPACT_FIELDS),
                 },
               ],
             };

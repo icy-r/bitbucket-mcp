@@ -87,6 +87,18 @@ export const COMMIT_COMPACT_FIELDS = [
 ];
 
 /**
+ * Commit build status - Essential fields for build status listings
+ */
+export const BUILD_STATUS_COMPACT_FIELDS = [
+  'key',
+  'name',
+  'state',
+  'url',
+  'description',
+  'updated_on',
+];
+
+/**
  * Issue - Essential fields for issue listings
  */
 export const ISSUE_COMPACT_FIELDS = [
@@ -219,6 +231,7 @@ export const COMPACT_FIELDS_MAP: Record<string, string[]> = {
   branch: BRANCH_COMPACT_FIELDS,
   tag: TAG_COMPACT_FIELDS,
   commit: COMMIT_COMPACT_FIELDS,
+  build_status: BUILD_STATUS_COMPACT_FIELDS,
   issue: ISSUE_COMPACT_FIELDS,
   issue_comment: ISSUE_COMMENT_COMPACT_FIELDS,
   pipeline: PIPELINE_COMPACT_FIELDS,
