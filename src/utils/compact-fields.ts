@@ -124,6 +124,8 @@ export const PIPELINE_COMPACT_FIELDS = [
   'state.result.name',
   'target.ref_name',
   'target.ref_type',
+  'target.commit.hash',
+  'target.pullrequest.id',
   'creator.display_name',
   'created_on',
   'completed_on',
