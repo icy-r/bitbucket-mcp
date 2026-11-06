@@ -11,7 +11,14 @@ const mockTriggerCustom = vi.fn().mockResolvedValue({ uuid: '{custom-pipeline}' 
 vi.mock('../../../src/api/endpoints/pipelines.js', () => ({
   PipelinesAPI: vi.fn().mockImplementation(() => ({
     list: mockList,
-    get: vi.fn().mockResolvedValue({ uuid: '{pipeline-uuid}' }),
+    get: vi.fn().mockResolvedValue({
+      uuid: '{pipeline-uuid}',
+      target: {
+        ref_name: 'feature/x',
+        commit: { hash: 'abc123def456', links: { html: { href: 'https://example' } } },
+        pullrequest: { id: 42, title: 'PR title' },
+      },
+    }),
     triggerBranch: mockTriggerBranch,
     triggerCustom: mockTriggerCustom,
     stop: vi.fn().mockResolvedValue(undefined),
@@ -110,6 +117,22 @@ describe('Pipeline Tools', () => {
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('branch_name');
+    });
+  });
+
+  describe('compact output', () => {
+    it('should include the target commit hash and pull request id', async () => {
+      const result = await handler({
+        action: 'get',
+        workspace: 'test-ws',
+        repo_slug: 'test-repo',
+        pipeline_uuid: '{pipeline-uuid}',
+        format: 'compact',
+      });
+
+      expect(result.content[0].text).toContain('abc123def456');
+      expect(result.content[0].text).toContain('42');
+      expect(result.content[0].text).not.toContain('PR title');
     });
   });
 
